@@ -34,7 +34,7 @@ for line in set_tags:
 	log_likelihood = line[13]
 
 	if "consensus" in line:
-		if float(log_likelihood) >= -50.0:
+		if float(log_likelihood) >= -50.0:    #log likelihood cutoff for loci greater than -50
 			number_consensus += 1
 		
 		if int(line[11]) == 1:
