@@ -89,7 +89,7 @@ for i in set_batch:
 print "Merging catalogs and creating final table...",time.ctime()
 
 output1 = open(individual+".txt", "w")
-output1.write("#ID_LOCUS SEQUENCE LOG_LIKELIHOOD NUMBER_STACKS NUMBER_IND_SHARING\n");   #write header in output1
+output1.write("#ID_LOCUS SEQUENCE LOG_LIKELIHOOD BLACKLIST NUMBER_STACKS NUMBER_IND_SHARING\n");   #write header in output1
 
 for x in catalog.keys():
 	if x in catalog2.keys():
