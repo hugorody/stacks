@@ -3,7 +3,7 @@
 
 import sys
 
-file1 = sys.argv[1] #XXX.matches.tsv: Matches to the catalog
+file1 = sys.argv[1] #matches.tsv: Matches to the catalog
 file2 = sys.argv[2] #models.tsv
 var1 = sys.argv[3]  #minimum log likelihood cutoff
 var2 = sys.argv[4]  #minimum stack depth
@@ -20,7 +20,7 @@ except IOError:
 
 selectedconsensus = {}  #dictionary containing SampleID_LocusID as keys, and Stack depth as values
 
-for i in set_1:   #XXX.matches.tsv: Matches to the catalog
+for i in set_1:   #matches.tsv: Matches to the catalog
 	i = i.split("\t")
 	
 	if "consensus" in i:
