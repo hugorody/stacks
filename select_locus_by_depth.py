@@ -21,11 +21,60 @@ try:
 except IOError:
 	print ("Input files doesn't exist!")
 
-set_2 = set(line.strip() for line in open (file2, 'r'))
+#File 1: matches.tsv
 
+locusmatches = []  #list containing SampleID_LocusID of locus that is present on the matches list (matched to catalog) and passed cutoff filter
 
+for i in set_1:   #matches.tsv: Matches to the catalog
+	i = i.split("\t")
+	
+	if "consensus" in i:
+		locusmatch = i[3]+"_"+i[4]
+		depthlocus = int(i[6])
+		quallocus = float(i[7])
+		
+		if depthlocus >= depthlcut and quallocus >= logllcut:
+			locusmatches.append(locusmatch)
+
+set_1.close()
+
+#File 3: alleles.tsv
+
+alleles = [] #list containing all locus containing predicted alleles (SNPs)
+
+for j in set_3:  #alleles.tsv
+	if "#" not in j:
+		j = j.split("\t")
+	
+		alleleid = j[1]+"_"+j[2] #merge sampleID_locusID
+		
+		if alleleid not in alleles:
+			alleles.append(alleleid)
+
+set_3.close()
+
+	
+
+#File 4: batch_1.catalog.tags.tsv
+catalog = {} #dictionary containing sampleID_locusID as keys, and the number of times the locus is shared among individuals as values
+
+for u in set_4: #batch_1.catalog.tags.tsv
+	if "#" not in u:
+		u = u.split("\t")
+		key = u[2]
+		line = u[8]
+		numtimes = int(len(line.split(","))) #number of individuals the locus is shared
+		linelist = line.split(",") #list of sampleID_locusID being shared
+		
+		for g in linelist:
+			catalog[g] = numtimes
+			
+			
+set_4.close()
 
 #File 2: tags.tsv
+
+set_2 = set(line.strip() for line in open (file2, 'r'))
 
 consensusqual = {}  #sampleID_locusID loglikelihood
 consensusdepth = {} #sampleID_locusID depth_reads
@@ -54,51 +103,11 @@ for k in consensusqual.items():
 	
 	if qual >= logllcut and dept >= depthlcut:
 		consensusselec.append(locu)
+
+del set_2
+
+
 		
-
-#File 4: batch_1.catalog.tags.tsv
-catalog = {} #dictionary containing sampleID_locusID as keys, and the number of times the locus is shared among individuals as values
-
-for u in set_4: #batch_1.catalog.tags.tsv
-	if "#" not in u:
-		u = u.split("\t")
-		key = u[2]
-		line = u[8]
-		numtimes = int(len(line.split(","))) #number of individuals the locus is shared
-		linelist = line.split(",") #list of sampleID_locusID being shared
-		
-		for g in linelist:
-			catalog[g] = numtimes
-
-
-#File 1: matches.tsv
-
-locusmatches = []  #list containing SampleID_LocusID of locus that is present on the matches list (matched to catalog) and passed cutoff filter
-
-for i in set_1:   #matches.tsv: Matches to the catalog
-	i = i.split("\t")
-	
-	if "consensus" in i:
-		locusmatch = i[3]+"_"+i[4]
-		
-		if locusmatch in consensusselec:
-			locusmatches.append(locusmatch)
-			
-
-#File 3: alleles.tsv
-
-alleles = [] #list containing all locus containing predicted alleles (SNPs)
-
-for j in set_3:  #alleles.tsv
-	if "#" not in j:
-		j = j.split("\t")
-	
-		alleleid = j[1]+"_"+j[2] #merge sampleID_locusID
-		
-		if alleleid not in alleles:
-			alleles.append(alleleid)
-
-
 	
 ####Lists
 
