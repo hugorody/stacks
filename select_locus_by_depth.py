@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #usage: python select_locus_by_depth.py file.matches.tsv file.models.tsv loglikelihood_value depth_value
-#Calculates parameters to summarize Stacks results
-#Detailed description is given at the end of script, in Variables calc section 
+#Calculates parameters to summarize Stacks results for a specific individual, based on a filter of minimum stack depth and a loglikelihood cutoff (normally used as greater than -10)
+#Detailed description is given at the end of script, in the Variables calc section 
 
 import sys
 import numpy
@@ -13,7 +13,7 @@ file4 = sys.argv[4] #batch_1.catalog.tags.tsv
 var1 = sys.argv[5]  #minimum log likelihood cutoff
 var2 = sys.argv[6]  #minimum stack depth
 
-logllcut = float(var1)   # if a locus is a perfect homozygote, with no sequencing errors, each column will produce a likelihood of 1. That is, a 100% likelihood of a homozygote. Ln(1) = 0, so the best score a locus can have in log likelihood world is 0, and as the locus gets worse the likelihood gets more negative.
+logllcut = float(var1)   # if a locus is a perfect homozygote, with no sequencing errors, each column will produce a likelihood of 1. That is, a 100% likelihood of a homozygote. Ln(1) = 0, so the best score a locus can have in log likelihood world is 0, and as the locus gets worse the likelihood gets more negative. Normally is used greater than -10.
 depthlcut = int(var2)
 
 try:
@@ -33,9 +33,9 @@ for i in set_1:   #matches.tsv: Matches to the catalog
 	if "consensus" in i:
 		locusmatch = i[3]+"_"+i[4]
 		depthlocus = int(i[6])
-		quallocus = float(i[7])
+		loglocus = float(i[7])
 		
-		if depthlocus >= depthlcut and quallocus >= logllcut:
+		if depthlocus >= depthlcut and loglocus >= logllcut:
 			locusmatches.append(locusmatch)
 
 set_1.close()
