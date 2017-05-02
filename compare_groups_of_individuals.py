@@ -1,12 +1,14 @@
 #!/usr/bin/python
-#usage: 
+#usage: python compare_group_of_individuals.py list.lst batch_1.catalog.tags.tsv int
+#sumarize the interactions of a subpopulation of individuals of a larger population/group of individuals to help understand if stacks analysis are making sense
+#creates three outputs: output0 _table.txt has two columns Desc (Group, for all individuals; and Indiv1,Indiv2 for pairs of individuals) and Nshared_loci (). output1 _group.txt has two columns CatalogID (Catalog ID of the match) and SampleID_LocusID (Individual ID plus its Locus ID combined with _ and separated by comma). output2 has the same columns of output1 but now showing the locus information that is shared by all possible individual pair combinations
 
 import sys
 import itertools
 
 file1 = sys.argv[1] #a list containing sampleIDs separated by line break
 file2 = sys.argv[2] #batch_1.catalog.tags.tsv
-
+nindi = sys.argv[3]  #minimum number (int) of individuals to consider when calculating the catalog
 
 set_1 = list(line.strip() for line in open (file1, 'r'))
 set_2 = list(line.strip() for line in open (file2, 'r'))
@@ -45,13 +47,14 @@ for i in set_2:
 				newdict[i] = dictsampleid[i]
 
 		
-		if int(len(newdict)) == int(len(set_1)):
+#		if int(len(newdict)) == int(len(set_1)):  #filter based in the percentage of individuals
+		if int(len(newdict)) >= int(nindi):  #filter based in the number of individuals nindi variable
 			sizegroup.append(catalogid)
 			
 #			print catalogid+" "+",".join(["_".join([key, str(val)]) for key, val in newdict.items()])
 			output1.write(catalogid+" "+",".join(["_".join([key, str(val)]) for key, val in newdict.items()])+"\n");
 
-
+print "group "+str(len(sizegroup))
 output0.write("group "+str(len(sizegroup))+"\n");
 
 #generate catalog for pair combinations among group members
@@ -93,4 +96,5 @@ for sampleid in pairs:
 				output2.write(catalogid+" "+id1+"_"+dictsampleid[id1]+","+id2+"_"+dictsampleid[id2]+"\n");
 				sizepair.append(catalogid)
 	
+	print id1+","+id2+" "+str(len(sizepair))
 	output0.write(id1+","+id2+" "+str(len(sizepair))+"\n");
