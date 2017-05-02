@@ -1,5 +1,7 @@
 #!/usr/bin/python
 #usage: python select_locus_by_depth.py file.matches.tsv file.models.tsv loglikelihood_value depth_value
+#Calculates parameters to summarize Stacks results
+#Detailed description is given at the end of script, in Variables calc section 
 
 import sys
 import numpy
@@ -150,4 +152,4 @@ avedepthglobal = numpy.mean(globaldepth) #the global average depth number for th
 avesharesnp = numpy.mean(sharetimes) #for the pool of locus presenting SNPs, the global average number of individuals sharing those locus
 
 
-print totalpredictedlocus,totalselectedlocus,nlocusmatches,nlocusamb,avedepthamblocus,percentamblocus,avedepthglobal,avesharesnp
+print totalpredictedlocus,totalselectedlocus,avedepthglobal,nlocusmatches,nlocusamb,avedepthamblocus,percentamblocus,avesharesnp
