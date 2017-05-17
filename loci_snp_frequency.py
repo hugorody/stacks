@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#verify the frequency of predicted SNPs in each base of all loci of individuals and create a scatter plot
+#compute the frequency of predicted SNPs in each base of all loci of individuals and create a scatter plot
 #input: *.tags.tsv (only for individuals files, not batch)
 #usage: python script.py *.tags.tsv
 
