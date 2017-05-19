@@ -1,14 +1,16 @@
 #!/usr/bin/python
 #usage: python compare_group_of_individuals.py list.lst batch_1.catalog.tags.tsv int
 #sumarize the interactions of a subpopulation of individuals of a larger population/group of individuals to help understand if stacks analysis are making sense
-#creates three outputs: output0 _table.txt has two columns Desc (Group, for all individuals; and Indiv1,Indiv2 for pairs of individuals) and Nshared_loci (). output1 _group.txt has two columns CatalogID (Catalog ID of the match) and SampleID_LocusID (Individual ID plus its Locus ID combined with _ and separated by comma). output2 has the same columns of output1 but now showing the locus information that is shared by all possible individual pair combinations
+#creates four outputs: output0 _table.txt has two columns Desc (Group, for all individuals; and Indiv1,Indiv2 for pairs of individuals) and Nshared_loci (). output1 _group.txt has two columns CatalogID (Catalog ID of the match) and SampleID_LocusID (Individual ID plus its Locus ID combined with _ and separated by comma). 
+#output2 has the same columns of output1 but now showing the locus information that is shared by all possible individual pair combinations
+#outputfasta is fasta sequences for loci shared among groups
 
 import sys
 import itertools
 
 file1 = sys.argv[1] #a list containing sampleIDs separated by line break
 file2 = sys.argv[2] #batch_1.catalog.tags.tsv
-nindi = sys.argv[3]  #minimum number (int) of individuals to consider when calculating the catalog
+nindi = sys.argv[3] #minimum number (int) of individuals to consider when calculating the catalog
 
 set_1 = list(line.strip() for line in open (file1, 'r'))
 set_2 = list(line.strip() for line in open (file2, 'r'))
@@ -22,16 +24,25 @@ output0.write("Desc Nshared_loci\n");
 output1 = open(nameoutput+"_group.txt", "w")  #OUTPUT 1 GROUP CATALOG
 output1.write("CatalogID SampleID_LocusID\n");
 
+#generate fasta for group catalog
+outputfasta = open(nameoutput+".fasta","w")
+
+
+wholecatalog = {}
+
 sizegroup = []
 for i in set_2:
 	if "#" not in i:
 		i = i.split("\t")
 		
 		catalogid = i[2] #id number of matches in catalog
+		sequence = i[9]
 		listsamplelocus = i[8].split(",") #sampleID_locusID list of the matches
 		
 		dictsampleid = {} #dictionary containing the sampleID as keys, and locusID as values
 		
+		wholecatalog[catalogid] = sequence
+				
 		for j in listsamplelocus:
 			j = j.split("_") 
 			
@@ -53,6 +64,10 @@ for i in set_2:
 			
 #			print catalogid+" "+",".join(["_".join([key, str(val)]) for key, val in newdict.items()])
 			output1.write(catalogid+" "+",".join(["_".join([key, str(val)]) for key, val in newdict.items()])+"\n");
+			outputfasta.write(">"+catalogid+"\n"+str(wholecatalog[catalogid])+"\n");
+			
+			
+			
 
 print "group "+str(len(sizegroup))
 output0.write("group "+str(len(sizegroup))+"\n");
