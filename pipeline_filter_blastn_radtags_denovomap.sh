@@ -21,6 +21,8 @@ echo "Creating blastnfiles, fafiles and filterdfq directories in the output dire
 mkdir "$outputsdir"fafiles    #FASTA FILES DIRECTORY
 mkdir "$outputsdir"filteredfq #FASTQ FILTERED FILES DIRECTORY
 mkdir "$outputsdir"blastnfiles   #BLASTN result FILES DIRECTORY
+else
+echo "BLASTN FILTER STEP WONT BE EXECUTED"
 fi
 
 #CONFIGURATION FOR PROCESS_RADTAGS STEP
@@ -32,6 +34,8 @@ echo "Path to the barcodes file (format: seq_barcode <tab> individual):"; read b
 echo "Creating individuals and barcodes directories in the output directory"
 mkdir "$outputsdir"individuals   #Stacks INDIVIDUALS FILES DIRECTORY
 mkdir "$outputsdir"barcodes
+else
+echo "PROCESS_RADTAGS STEP WONT BE EXECUTED"
 fi
 
 #CONFIGURATION FOR DE NOVO MAP STEP
@@ -44,11 +48,14 @@ mkdir "$outputsdir"barcodes
 echo "Set the value (int) for the parameter -m:" mvalue
 echo "Set the value (int) for the parameter -M:" mmvalue
 echo "Set the value (int) for the parameter -n:" nvalue
-
+echo "Set the number (int) of threads to use -T:" nthreads
+echo "This pipeline will not allow SNP calling from secondary reads!"
 if [ "$barcodesfile" = "" ]; then
 echo "Path to the barcodes file (format: seq_barcode <tab> individual):"; read barcodesfile
 fi
 
+else
+echo "DE NOVO MAP STEP WONT BE EXECUTED"
 fi
 
 ############################# START PIPELINE ################################
@@ -104,5 +111,5 @@ fi
 #### DE NOVO MAP step
 if [ "$rundenovomap" = "1" ]; then
 echo "Starting PROCESS_RADTAGS  Step"
-denovo_map.pl -t -T 2 -m "$mvalue" -M "$mmvalue" -n "$nvalue" -H -b 1 -S -O "$individualpop" -o "$outputsdir""$denovooutput"/ --samples "$outputsdir"individuals/
+denovo_map.pl -t -T "$nthreads" -m "$mvalue" -M "$mmvalue" -n "$nvalue" -H -b 1 -S -O "$individualpop" -o "$outputsdir""$denovooutput"/ --samples "$outputsdir"individuals/
 fi
