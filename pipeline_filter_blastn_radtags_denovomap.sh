@@ -1,4 +1,6 @@
 #!/usr/bin/sh
+#Execute Stacks process_radtags and denovo_map.pl pipelines, including the option of filtering raw reads based that match to a reference genome
+#Dependencies: Stacks, Blast, and FastX-toolkit
 
 #PIPELINE
 #BLASTn Filter
