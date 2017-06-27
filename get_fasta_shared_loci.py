@@ -59,24 +59,36 @@ for i in locidict: #for each shared_loci in the input list
     output = open(str(i)+".fasta","w") #creates a fasta file
     ordersamples.append(i) #make a record of the order of loci being read
     for j in sampledict: #verifica quais samples possuem aquele loci consultando na lista de samples_IDs do catalogids
-        if j in catalogids[i] and int(catalogids[i].count(j)) == 1: #se a sample estiver no loci and no more than one loci per the sample
-            position = int(catalogids[i].index(j)) #captura a posicao da sample na lista dos catalogids
-            samplelocus = catalogloci[i][position] #utiliza a posicao da sample para pegar sua respectiva locus id no dicionario catalogloci
+        if j in catalogids[i]: #se a sample estiver no loci
 
-            f1 = open("joined_"+sampledict[j]+".tags.tsv","r").readlines() #open respective sample.tags.tsv file and read lines
-            for line in f1:
-                if "consensus" in line: #only take consensus sequences lines
-                    line = line.split("\t")
-                    if samplelocus == int(line[2]): #if sample locus id is found in line
-                        sampleseq = line[9] #take the consensus sequence
-                        print ">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"
-                        output.write(">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"); #write in the shared loci fasta file, with sampleID_lociID as header
+            if int(catalogids[i].count(j)) == 1: #if no more than one loci per the sample
+                position = int(catalogids[i].index(j)) #captura a posicao da sample na lista dos catalogids
+                samplelocus = catalogloci[i][position] #utiliza a posicao da sample para pegar sua respectiva locus id no dicionario catalogloci
 
-                        if j in concater:  #feeds the concater dict with sampleID as keys and respective consensus sequences as values
-                            seqseq = concater[j]+"MMM"+sampleseq
-                            concater[j] = seqseq
-                        else:
-                            concater[j] = sampleseq
+                f1 = open("joined_"+sampledict[j]+".tags.tsv","r").readlines() #open respective sample.tags.tsv file and read lines
+                for line in f1:
+                    if "consensus" in line: #only take consensus sequences lines
+                        line = line.split("\t")
+                        if samplelocus == int(line[2]): #if sample locus id is found in line
+                            sampleseq = line[9] #take the consensus sequence
+                            print ">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"
+                            output.write(">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"); #write in the shared loci fasta file, with sampleID_lociID as header
+
+                            if j in concater:  #feeds the concater dict with sampleID as keys and respective consensus sequences as values
+                                seqseq = concater[j]+"MMM"+sampleseq
+                                concater[j] = seqseq
+                            else:
+                                concater[j] = sampleseq
+            else:
+                sampleseq = "?" * 80
+                print ">"+str(j)+"_"+"duplicated region"+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"
+                output.write(">"+str(j)+"_"+"duplicated region"+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n");
+
+                if j in concater:
+                    seqseq = concater[j]+"MMM"+sampleseq
+                    concater[j] = seqseq
+                else:
+                    concater[j] = sampleseq
 
         else:
             sampleseq = "?" * 80
