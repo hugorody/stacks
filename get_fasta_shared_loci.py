@@ -47,8 +47,8 @@ with open(file3,'r') as set3:
                         idssamplelist.append(sampleid)
                         idslocilist.append(locus_id)
 
-                        catalogids[locid] = idssamplelist
-                        catalogloci[locid] = idslocilist
+                catalogids[locid] = idssamplelist
+                catalogloci[locid] = idslocilist
 set3.close()
 
 #GET DATA
@@ -61,7 +61,7 @@ for i in locidict: #for each shared_loci in the input list
         if j in catalogids[i]: #se a sample estiver no loci
             position = int(catalogids[i].index(j)) #captura a posicao da sample na lista dos catalogids
             samplelocus = catalogloci[i][position] #utiliza a posicao da sample para pegar sua respectiva locus id no dicionario catalogloci
-            
+
             f1 = open("joined_"+sampledict[j]+".tags.tsv","r").readlines() #open respective sample.tags.tsv file and read lines
             for line in f1:
                 if "consensus" in line: #only take consensus sequences lines
