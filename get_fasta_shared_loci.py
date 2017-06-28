@@ -55,6 +55,7 @@ set3.close()
 #GET DATA
 concater = dict() #concatenated fasta file of sample consensus sequences
 ordersamples = list() #order of loci being read
+duplicates = dict()
 for i in locidict: #for each shared_loci in the input list
     output = open(str(i)+".fasta","w") #creates a fasta file
     ordersamples.append(i) #make a record of the order of loci being read
@@ -71,8 +72,8 @@ for i in locidict: #for each shared_loci in the input list
                         line = line.split("\t")
                         if samplelocus == int(line[2]): #if sample locus id is found in line
                             sampleseq = line[9] #take the consensus sequence
-                            print ">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"
-                            output.write(">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"); #write in the shared loci fasta file, with sampleID_lociID as header
+                            print ">"+str(samplevsisolateids[j])+" "+str(j)+"_"+str(samplelocus)+" "+str(i)+"\n"+sampleseq+"\n"
+                            output.write(">"+str(samplevsisolateids[j])+" "+str(j)+"_"+str(samplelocus)+" "+str(i)+"\n"+sampleseq+"\n"); #write in the shared loci fasta file, with sampleID_lociID as header
 
                             if j in concater:  #feeds the concater dict with sampleID as keys and respective consensus sequences as values
                                 seqseq = concater[j]+"MMM"+sampleseq
@@ -81,8 +82,15 @@ for i in locidict: #for each shared_loci in the input list
                                 concater[j] = sampleseq
             else:
                 sampleseq = "?" * 80
-                print ">"+str(j)+"_"+"duplicated region"+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"
-                output.write(">"+str(j)+"_"+"duplicated region"+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n");
+                print ">"+str(samplevsisolateids[j])+" "+str(j)+" duplicated_region "+str(i)+"\n"+sampleseq+"\n"
+                output.write(">"+str(samplevsisolateids[j])+" "+str(j)+" duplicated_region "+str(i)+"\n"+sampleseq+"\n");
+
+                if i not in duplicates:
+                    duplicates[str(i)] = [str(j)]
+                else:
+                    newdup = duplicates[str(i)]
+                    newdup.append(str(j))
+                    duplicates[str(i)] = newdup
 
                 if j in concater:
                     seqseq = concater[j]+"MMM"+sampleseq
@@ -92,8 +100,8 @@ for i in locidict: #for each shared_loci in the input list
 
         else:
             sampleseq = "?" * 80
-            print ">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n"
-            output.write(">"+str(j)+"_"+str(samplelocus)+" isolate "+str(samplevsisolateids[j])+" catalog loci "+str(i)+"\n"+sampleseq+"\n");
+            print ">"+str(samplevsisolateids[j])+" "+str(j)+" null "+str(i)+"\n"+sampleseq+"\n"
+            output.write(">"+str(samplevsisolateids[j])+" "+str(j)+" null "+str(i)+"\n"+sampleseq+"\n");
 
             if j in concater:
                 seqseq = concater[j]+"MMM"+sampleseq
@@ -109,7 +117,13 @@ for i in concater.items():
 output1.close()
 
 #print order of concatenated locis
-output2 = open("concater_info.txt","w")
+output2 = open("concater_order.txt","w")
 for i in ordersamples:
     output2.write(str(i)+"\n");
 output2.close()
+
+#duplicates
+output3 = open("duplicate_loci.txt","w")
+for i in duplicates.items():
+    output3.write(i[0]+" "+",".join(i[1])+"\n");
+output3.close()
