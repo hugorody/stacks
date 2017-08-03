@@ -5,7 +5,7 @@ file1 = sys.argv[1] #batch
 file2 = sys.argv[2] #population file <isolatecode><tab><lineage><tab><isolate><tab><idstacks>
 
 #output
-outputname = "samplelocimatrix_bypopulation.csv"
+outputname = "samplelocimatrix_bypopulation_matriz2.csv"
 output1 = open(outputname,'w')
 
 listisolates = list()  #creates a list with idstacks for all isolates in population input file2
@@ -37,7 +37,7 @@ with open(file1,'r') as set1:
                 j = j.split("_")
                 isolateid = j[0]
 
-                if isolateid not in stacksidslist:
+                if isolateid not in stacksidslist and isolateid in listisolates: #here it must check if isolateid is in listisolates
                     stacksidslist.append(isolateid)
 
             #feed catalogdict
@@ -45,7 +45,7 @@ with open(file1,'r') as set1:
             catalogdict[locid] = stacksidslist
 
             #feed catalogsele
-            if len(set(stacksidslist).intersection(listisolates)) >= 1:
+            if len(set(stacksidslist).intersection(listisolates)) >= 60: #this is the minimum number of isolates (idstacks) sharing the locus
                 catalogsele[locid] = stacksidslist
 
 del catalogdict #not being used
