@@ -3,6 +3,7 @@
 import sys
 import subprocess
 from Bio import SeqIO
+import os
 
 file1 = sys.argv[1] #concater file
 file2 = sys.argv[2] #reference fasta
@@ -104,3 +105,7 @@ for i in range(1,len(seqs)+1):
         concatenatedfile.write("MMM"+str(finalrefseqs[str(i)]));
     else:
         concatenatedfile.write("MMM" + 80 * "?");
+
+os.remove(referencename+".blastdb.nhr")
+os.remove(referencename+".blastdb.nin")
+os.remove(referencename+".blastdb.nsq")
