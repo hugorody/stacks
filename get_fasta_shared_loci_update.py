@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#This script is the part 3rd of "From Stacks to PCA" pipeline
+#This script is the part 2nd of "From Stacks to PCA" pipeline
 #Input: 3 files and 1 string
 #------ 1. List of selected Stacks IDs (Population file) with 3 tab separated columns
 #------------- 1 column: Individual file name, for example 003
