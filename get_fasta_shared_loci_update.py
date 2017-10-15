@@ -1,21 +1,34 @@
 #!/usr/bin/python
+#This script is the part 3rd of "From Stacks to PCA" pipeline
+#Input: 3 files and 1 string
+#------ 1. List of selected Stacks IDs (Population file) with 3 tab separated columns
+#------------- 1 column: Individual file name, for example 003
+#------------- 2 column: Individual Stacks ID
+#------------- 3 column: Individual Code, for example MY_CODE003
+#------ 2. List of loci shared among individuals, can be obtained from batch_1.catalog.tags.tsv
+#------ 3. Stacks file "batch_1.catalog.tags.tsv"
+#------ 4. nameout. a name for the run, for example analise5
+#Outputs:
+#------ 1. fasta file containing sequences for each individual of concatenated loci from input 2
+#------ 2. text file containing the order of concatenated loci
 
 import sys
-file1 = sys.argv[1] #ids list  <file ID><tab><stacks/sample ID><tab><sample user code>  note: isolate ID is normally the name of the fastq file
-file2 = sys.argv[2] #loci list <catalog_shared_loci>
-file3 = sys.argv[3] #batch_1.catalog.tags.tsv
-nameout = sys.argv[4] #a name of the run, ex: ana3
 
-#OPEN FILES TO CREATE DICTIONARIES
+file1 = sys.argv[1]
+file2 = sys.argv[2]
+file3 = sys.argv[3]
+nameout = sys.argv[4]
+
+### OPEN FILES TO CREATE DICTIONARIES
 with open(file1,'r') as set1:
     sampledict = dict() #Dict {idstack:'file ID'}
-    samplevsisolateids = dict() #Dict {idstack:'sample user code'}
-    isolatelist = dict()
+    samplevsindividualids = dict() #Dict {idstack:'sample user code'}
+    individuallist = dict()
     for i in set1:
         i = i.split()
         idstack = i[1]
         sampledict[int(idstack)] = i[0]
-        samplevsisolateids[int(idstack)] = i[2]
+        samplevsindividualids[int(idstack)] = i[2]
 set1.close()
 
 with open(file2,'r') as set2:
@@ -29,7 +42,7 @@ with open(file3,'r') as set3:
     catalogids = {} #Dict {loci_ID:[List_sample_IDs]}
     catalogloci = {} #Dict {loci_ID:[List_loci_IDs]}
     consensuseq = {} #Dict {loci_ID:consensus_sequence}
-    isolateloci = {} #Dict {sampleid:[list of loci in the sample that is shared]}
+    individualloci = {} #Dict {sampleid:[list of loci in the sample that is shared]}
 
     for i in set3:
         if "#" not in i:
@@ -48,12 +61,12 @@ with open(file3,'r') as set3:
                     locus_id = int(j[1])
 
                     if sampleid in sampledict:
-                        if sampleid not in isolateloci:
-                            isolateloci[sampleid] = [locus_id]
+                        if sampleid not in individualloci:
+                            individualloci[sampleid] = [locus_id]
                         else:
-                            addloci = isolateloci[sampleid]
+                            addloci = individualloci[sampleid]
                             addloci.append(locus_id)
-                            isolateloci[sampleid] = addloci
+                            individualloci[sampleid] = addloci
 
                     #feed lists
                     idssamplelist.append(sampleid)
@@ -63,8 +76,9 @@ with open(file3,'r') as set3:
                 catalogloci[locid] = idslocilist
 set3.close()
 
-isolatecatalog = {} #Dict {StackID_LociID: sequence}
-for i in isolateloci.items(): #{sampleid:[list of loci in the sample that is shared]}
+### CREATE CORRELATION AMONG DICTIONARIES AND GENERATE OUTPUTs
+individualcatalog = {} #Dict {StackID_LociID: sequence}
+for i in individualloci.items(): #{sampleid:[list of loci in the sample that is shared]}
     f1 = open(file3.replace("batch_1.catalog.tags.tsv","")+"joined_"+sampledict[i[0]]+".tags.tsv","r").readlines()
     print "Creating catalog for the file "+str(sampledict[i[0]])+" Stacks ID "+str(i[0])+"."
     for j in f1:
@@ -72,26 +86,32 @@ for i in isolateloci.items(): #{sampleid:[list of loci in the sample that is sha
             j = j.rstrip()
             j = j.split("\t")
             if int(j[2]) in i[1]:
-                isolatecatalog[str(i[0])+"_"+j[2]] = j[9]
+                individualcatalog[str(i[0])+"_"+j[2]] = j[9]
             #    print str(i[0])+"_"+j[2],j[9]
+#print individualcatalog
 
-#print isolatecatalog
 output1 = open(nameout+"_concater.fasta","w")
-for i in isolateloci.items(): #{sampleid:[list of loci in the sample that is shared]}
-    isolateconcatedseq = []
+for i in individualloci.items(): #{sampleid:[list of loci in the sample that is shared]}
+    individualconcatedseq = []
     for j in catalogids.items(): #{loci_ID:[List_sample_IDs]}
         if int(i[0]) in j[1]:
             manytimes = j[1].count(i[0])
             if manytimes == 1: #eliminate duplicated loci
-                positionofisolate = j[1].index(i[0])
-                sampleid_locid = str(i[0])+"_"+str(catalogloci[j[0]][positionofisolate])
-                #print samplevsisolateids[i[0]],"[Stacks ID: "+str(i[0])+", Shared loci ID: "+str(j[0])+", SampleID_LociID:",sampleid_locid+"]"
-                isolateconcatedseq.append(isolatecatalog[sampleid_locid])
+                positionofindividual = j[1].index(i[0])
+                sampleid_locid = str(i[0])+"_"+str(catalogloci[j[0]][positionofindividual])
+                #print samplevsindividualids[i[0]],"[Stacks ID: "+str(i[0])+", Shared loci ID: "+str(j[0])+", SampleID_LociID:",sampleid_locid+"]"
+                individualconcatedseq.append(individualcatalog[sampleid_locid])
             else:
         #        print "duplicated locus"
-                isolateconcatedseq.append(str(80 * "?"))
+                individualconcatedseq.append(str(80 * "?"))
         else:
         #    print "missing locus"
-            isolateconcatedseq.append(str(80 * "?"))
+            individualconcatedseq.append(str(80 * "?"))
 
-    output1.write(">"+samplevsisolateids[i[0]]+" [Stacks ID "+str(i[0])+"]\n"+"MMM".join(isolateconcatedseq)+"\n");
+    output1.write(">"+samplevsindividualids[i[0]]+" [Stacks ID "+str(i[0])+"]\n"+"MMM".join(individualconcatedseq)+"\n");
+output1.close()
+
+output2 = open(nameout+"_concater_loci_order.fasta","w")
+for i in catalogids:
+    output2.write(str(i)+"\n");
+output2.close()
