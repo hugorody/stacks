@@ -4,11 +4,14 @@
 #Reads BLAST output file and set new coordinates considering CDS codon frame
 
 import subprocess
+from Bio import SeqIO
+from Bio.Seq import Seq
 
-input1 = "/home/hugo/Dropbox/Unifesp/Trabalhos/Trabalho1/Blastn2GOtable/3018.tags.tsv"
+input1 = "3018.tags.tsv"
 indiv = "3018"
-reference = "./plaza/cds.sbi.csv"
-runblast = 0
+reference = "cds.sbi.fasta"
+runblast = 0 #run 1, not run 0
+readlength = 80
 
 #GENERATE CONSENSUS FASTA FROM TAGS.TSV
 outfasta = open(indiv+".fasta","w")
@@ -60,19 +63,20 @@ def checkstopref(startref,stopref):
 
 #find reading frame start alignment in reference
 def checkstartref(startref):
-    if startref % 3 == 0:
-        startref = startref + 1
+    newframe = startref + 1
+    if newframe % 3 == 0:
+        startref = newframe
     else:
-        newframe = startref + 1
+        newframe = startref + 2
         if newframe % 3 == 0:
             startref = newframe
-        else:
-            startref = startref + 2
+
     return (startref)
 
 revcomp = {} #if the gbs sequence is reverse complement 1, or not 0
 coordgbs = {} #start stop in gbs
 coordref = {} #start stop in ref
+dictref = {}
 for i in blastnfilt.values():
     query = i[0]
     refer = i[1] #reference
@@ -92,17 +96,22 @@ for i in blastnfilt.values():
         #verify if start of alignment in reference is in reading frame
         frame = stopref - 1
         if frame % 3 == 0: #if the number of nucl in frame is divided into a set of consecutive triplets
-            startref = checkstopref(stopref,startref) #startref works as stopref, uses checkstopref function to find a reading frame stopref
-            stopquery = startquery + int(startref - stopref) #query is always aligned in forward. Find stopquery based on the length of reference alignment
+            startref = checkstopref(stopref,startref) - 1 #startref works as stopref, uses checkstopref function to find a reading frame stopref
+            startquery = readlength - stopquery
+            stopquery = startquery + int(startref - stopref) + 1 #query is always aligned in forward. Find stopquery based on the length of reference alignment
             #feed dictionaries
-            coordref[refer] = [stopref,startref]
+            coordref[refer + "--" + query] = [stopref - 1,startref]
+            dictref[refer] = ''
             coordgbs[query] = [startquery,stopquery]
 
         else: #if the number of nucl in frame is NOT divided into a set of consecutive triplets
             stopref = checkstartref(stopref) #stopref work as startref, uses checkstartref function to find a reading frame startref
-            startref = checkstopref(stopref,startref)
-            stopquery = startquery + int(startref - stopref)
-            coordref[refer] = [stopref,startref] #
+            startref = checkstopref(stopref,startref) - 1
+            startquery = int(readlength - stopquery) + 1
+            stopquery = startquery + int(startref - stopref) + 1
+            #feed dictionaries
+            coordref[refer + "--" + query] = [stopref,startref + 1] #
+            dictref[refer] = ''
             coordgbs[query] = [startquery,stopquery]
 
     else: ### NEGATIVE OF MAIN CONDITION
@@ -112,15 +121,78 @@ for i in blastnfilt.values():
         #verify if start of alignment in reference is in reading frame
         frame = startref - 1
         if frame % 3 == 0: #if the number of nucl in frame is divided into a set of consecutive triplets
+            startref = startref -1
             stopref = checkstopref(startref,stopref) #uses checkstopref function to find a reading frame stopref
+            startquery = startquery - 1
             stopquery = startquery + int(stopref - startref)
 
-            coordref[refer] = [startref,stopref] #
+            coordref[refer + "--" + query] = [startref,stopref] #
+            dictref[refer] = ''
             coordgbs[query] = [startquery,stopquery] #
 
         else:
             startref = checkstartref(startref) #uses checkstartref function to find a reading frame startref
             stopref = checkstopref(startref,stopref) #uses checkstopref function to find a reading frame stopref
+            startquery = startquery + 1
             stopquery = startquery + int(stopref - startref)
-            coordref[refer] = [startref,stopref] #
+            coordref[refer + "--" + query] = [startref,stopref] #
+            dictref[refer] = ''
             coordgbs[query] = [startquery,stopquery] #
+
+locus = {}
+locusblacklist = {}
+with open(input1,"r") as set1:
+    for i in set1:
+        i = i.rstrip()
+        if "#" not in i and "consensus" not in i and "model" not in i:
+            i = i.split("\t")
+            locusid = i[1] + "_" + i[2]
+            locuseq = i[9]
+            readtype = i[6]
+            if locusid in coordgbs and readtype == "primary":
+                readindex = int(i[7])
+                if locusid not in locus:
+                    locus[locusid] = [locuseq]
+                    locusblacklist[locusid] = readindex
+                else:
+                    if int(readindex) > int(locusblacklist[locusid]):
+                        addlocuseq = locus[locusid]
+                        addlocuseq.append(locuseq)
+                        locus[locusid] = addlocuseq
+                        locusblacklist[locusid] = readindex
+
+cdsref = {}
+for record in SeqIO.parse(reference, "fasta"):
+    header = record.id
+    if header in dictref:
+        cdsref[header] = record.seq
+
+###
+for x in blastnfilt.values():
+    query = x[0]
+    refer = x[1] #reference
+    copies = []
+    #GET SEQUENCES FROM GBS
+
+    if len(locus[query]) >= 5: #FILTER BY NUMBER OF COPIES
+        output = open(query + "_" + refer + ".aln.fas","w")
+        if int(revcomp[query]) == 1:
+            for w in locus[query]:
+                seq = str(Seq(w).reverse_complement()) #here has to be reverse complement
+                seq = seq[coordgbs[query][0]:coordgbs[query][1]]
+                copies.append(seq)
+        else:
+            for w in locus[query]:
+                seq = w[coordgbs[query][0]:coordgbs[query][1]]
+                copies.append(seq)
+
+    #GET SEQUENCE FROM REFERENCE
+        myrefseq = cdsref[refer][coordref[refer + "--" + query][0]:coordref[refer + "--" + query][1]]
+
+        output.write(">" + refer + " " + str(coordref[refer + "--" + query][0]) + "," + str(coordref[refer + "--" + query][1]) + "\n" + str(myrefseq) + "\n")
+        if int(coordref[refer + "--" + query][0]) % 3 != 0: #report if any reference sequence starts out of reading frame
+            print ("ERRO in file:",query + "_" + refer + ".aln.fas","OUT OF FRAME")
+
+        for j in copies:
+            output.write(">" + query + " " + str(revcomp[query]) + " " + str(coordgbs[query][0]) + "," + str(coordgbs[query][1]) + "\n" + str(j) + "\n")
+        output.close()
