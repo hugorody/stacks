@@ -46,7 +46,7 @@ with open(indiv + ".blastn","r") as setblastn:
             if identity > float(blastnfilt[query][2]) and length > int(blastnfilt[query][3]): #filter blastn results getting best hits based on identity and alignment length
                 blastnfilt[query] = i
 
-
+#find reading frame stop alignment in reference
 def checkstopref(startref,stopref):
     if (stopref - startref) % 3 == 0:
         stopref = stopref
@@ -58,6 +58,18 @@ def checkstopref(startref,stopref):
             stopref = stopref - 2
     return (stopref)
 
+#find reading frame start alignment in reference
+def checkstartref(startref):
+    if startref % 3 == 0:
+        startref = startref + 1
+    else:
+        newframe = startref + 1
+        if newframe % 3 == 0:
+            startref = newframe
+        else:
+            startref = startref + 2
+    return (startref)
+
 revcomp = {} #if the gbs sequence is reverse complement 1, or not 0
 coordgbs = {} #start stop in gbs
 coordref = {} #start stop in ref
@@ -65,63 +77,50 @@ for i in blastnfilt.values():
     query = i[0]
     refer = i[1] #reference
     identity = float(i[2])
-    length = int(i[3])
-    gapopenings = int(5)
-    startquery = int(i[6])
-    stopquery = int(i[7])
-    startref = int(i[8])
-    stopref = int(i[9])
-    if stopref < startref: #pegar reversa complementar do gbs
-        #stopref passara a ser o inicio do alinhamento do gbs reverso complementar na referencia
-        revcomp[query] = 1 #adiciona como revcomp ao dicionario
-        frame = stopref - 1 #verifica o n de nucl antes do inicio do alinhamento
-        if frame % 3 == 0: #se o inicio do alinhamento ja esta em frame em relacao a referencia
-            startref = checkstopref(stopref,startref)
-            coordref[refer] = [stopref,startref] #FRAME VERIFICADO primeiro valor relativo ao inicio do alinhamento
+    length = int(i[3]) #alignment length
+    gapopenings = int(5) #number of gap openings
+    startquery = int(i[6]) #start of alignment in query
+    stopquery = int(i[7]) #end of alignment in query
+    startref = int(i[8]) #start of alignment in subject/reference
+    stopref = int(i[9]) #end of alignment in subject/reference
 
-            stopquery = startquery + int(startref - stopref)
+    if stopref < startref: ### MAIN CONDITION
+        #if so, GBS locus sequence is aligned as reverse complement
+        #stopref now represents the start of aligned in reference
+        revcomp[query] = 1 #feed dictionary: identity query as reverse complement in dict
+
+        #verify if start of alignment in reference is in reading frame
+        frame = stopref - 1
+        if frame % 3 == 0: #if the number of nucl in frame is divided into a set of consecutive triplets
+            startref = checkstopref(stopref,startref) #startref works as stopref, uses checkstopref function to find a reading frame stopref
+            stopquery = startquery + int(startref - stopref) #query is always aligned in forward. Find stopquery based on the length of reference alignment
+            #feed dictionaries
+            coordref[refer] = [stopref,startref]
             coordgbs[query] = [startquery,stopquery]
 
-
-        else: #se inicio do alinhamento nao esta em frame em relacao a referencia
-            if stopref % 3 == 0:
-                stopref = stopref + 1
-            else:
-                newframe = stopref + 1
-                if newframe % 3 == 0:
-                    stopref = newframe
-                else:
-                    stopref = stopref + 2
-
+        else: #if the number of nucl in frame is NOT divided into a set of consecutive triplets
+            stopref = checkstartref(stopref) #stopref work as startref, uses checkstartref function to find a reading frame startref
             startref = checkstopref(stopref,startref)
-            coordref[refer] = [stopref,startref] #FRAME VERIFICADO
-
             stopquery = startquery + int(startref - stopref)
+            coordref[refer] = [stopref,startref] #
             coordgbs[query] = [startquery,stopquery]
 
+    else: ### NEGATIVE OF MAIN CONDITION
+        #if so, GBS locus is aligned in forward of reference
+        revcomp[query] = 0 #feed dictionary: identity query as NOT reverse complement in dict
 
-    else: #pega a sequencia do gbs normal
-        revcomp[query] = 0 #adiciona como nao revcomp ao dicionario
+        #verify if start of alignment in reference is in reading frame
         frame = startref - 1
-        if frame % 3 == 0: #se o inicio do alinhamento ja esta em frame em relacao a referencia
-            stopref = checkstopref(startref,stopref) #use function to gather stopref
-            coordref[refer] = [startref,stopref] #FRAME VERIFICADO
-
+        if frame % 3 == 0: #if the number of nucl in frame is divided into a set of consecutive triplets
+            stopref = checkstopref(startref,stopref) #uses checkstopref function to find a reading frame stopref
             stopquery = startquery + int(stopref - startref)
-            coordgbs[query] = [startquery,stopquery] #FRAME VERIFICADO
+
+            coordref[refer] = [startref,stopref] #
+            coordgbs[query] = [startquery,stopquery] #
 
         else:
-            if startref % 3 ==0:
-                startref = startref + 1
-            else:
-                newframe = startref + 1
-                if newframe % 3 == 0:
-                    startref = newframe
-                else:
-                    startref = startref + 2
-
-            stopref = checkstopref(startref,stopref) #use function to gather stopref
-            coordref[refer] = [startref,stopref] #FRAME VERIFICADO
-
+            startref = checkstartref(startref) #uses checkstartref function to find a reading frame startref
+            stopref = checkstopref(startref,stopref) #uses checkstopref function to find a reading frame stopref
             stopquery = startquery + int(stopref - startref)
-            coordgbs[query] = [startquery,stopquery] #FRAME VERIFICADO
+            coordref[refer] = [startref,stopref] #
+            coordgbs[query] = [startquery,stopquery] #
