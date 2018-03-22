@@ -9,7 +9,7 @@ from Bio.Seq import Seq
 
 input1 = "/home/hugo/Dropbox/Unifesp/Trabalhos/Trabalho1/Blastn2GOtable/3018.tags.tsv"
 indiv = "3018"
-reference = "./plaza/cds.sbi.csv"
+reference = "/home/hugo/Dropbox/Unifesp/Trabalhos/Genes_duplicados/plaza/cds.sbi.csv"
 runblast = 0
 numberofcopies = 5
 mismatches = 10
@@ -167,12 +167,14 @@ for x in blastnfilt.values():
         myrefseq = cdsref[refer][coordref[refer + "--" + query][0]:coordref[refer + "--" + query][1]]
 
         #WRITE FASTA OUTPUT FILES
-        output.write(">" + refer + " " + str(coordref[refer + "--" + query][0]) + "," + str(coordref[refer + "--" + query][1]) + "\n" + str(myrefseq) + "\n")
+        output.write(">" + refer + "\n" + str(myrefseq) + "\n")
         if int(coordref[refer + "--" + query][0]) % 3 != 0: #report if any reference sequence starts out of reading frame
             print ("ERRO in file:",query + "_" + refer + ".gbs.fas","OUT OF FRAME")
 
+        count = 0
         for j in copies:
-            output.write(">" + query + " " + str(revcomp[query]) + " " + str(coordgbs[query][0]) + "," + str(coordgbs[query][1]) + "\n" + str(j) + "\n")
+            count += 1
+            output.write(">" + query + "_" + str(count) + "\n" + str(j) + "\n")
         output.close()
 
 #MUSCLE ALIGNMENT STEP
