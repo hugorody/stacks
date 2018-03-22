@@ -11,8 +11,9 @@ input1 = "/home/hugo/Dropbox/Unifesp/Trabalhos/Trabalho1/Blastn2GOtable/3018.tag
 indiv = "3018"
 reference = "./plaza/cds.sbi.csv"
 runblast = 0
-readlength = 80
-numberofcopies = 10
+numberofcopies = 5
+mismatches = 10
+gapopenings = 10
 
 #GENERATE CONSENSUS FASTA FROM TAGS.TSV
 outfasta = open(indiv+".fasta","w")
@@ -44,13 +45,15 @@ with open(indiv + ".blastn","r") as setblastn:
         identity = float(i[2])
         length = int(i[3])
 
-        if query not in blastnfilt:
-            blastnfilt[query] = i
-        else:
-            if identity > float(blastnfilt[query][2]) and length > int(blastnfilt[query][3]): #filter blastn results getting best hits based on identity and alignment length
+        if int(i[4]) <= mismatches and int(i[5]) <= gapopenings: #CUTOFF BLAST
+
+            if query not in blastnfilt:
                 blastnfilt[query] = i
+            else:
+                if identity > float(blastnfilt[query][2]) and length > int(blastnfilt[query][3]): #FILTER best hits based on identity and alignment length
+                    blastnfilt[query] = i
 
-
+#PARSE TAGS STACKS FILE
 locus = {}
 locusblacklist = {}
 with open(input1,"r") as set1:
@@ -73,7 +76,6 @@ with open(input1,"r") as set1:
                         locus[locusid] = addlocuseq
                         locusblacklist[locusid] = readindex
 
-
 ################################################################################
 def sliding(startref,stopref):
     if startref % 3 == 0:
@@ -88,11 +90,13 @@ def sliding(startref,stopref):
             fatorstart = 2
 
     frame = stopref - startref
+    frame1 = stopref - 1 - startref
+    frame2 = stopref - 2 - startref
     if frame % 3 == 0:
         stopref = stopref
         fatorstop = 0
     else:
-        if int(frame - 1) % 3 == 0:
+        if frame1 % 3 == 0:
             stopref = stopref - 1
             fatorstop = 1
         else:
@@ -115,24 +119,24 @@ for i in blastnfilt.values():
 
     if len(locus[query]) >= numberofcopies:
         if stopsubject < startsubject: ### MAIN CONDITION
-            revcomp[query] = 1
+            revcomp[query] = 1 #ALIGNMENT IS REVERSE COMPLEMENT
             startref,stopref,fatorstart,fatorstop = sliding(stopsubject,startsubject)
-            startquery = startquery + fatorstart - 1
-            stopquery = stopquery - fatorstop - 1
+            startquery = startquery + fatorstop - 1
+            stopquery = stopquery - fatorstart - 1
 
             coordref[subject + "--" + query] = [startref,stopref]
             dictref[subject] = ''
             coordgbs[query] = [startquery,stopquery]
 
         else: ### NEGATIVE OF MAIN CONDITION
-            revcomp[query] = 0
+            revcomp[query] = 0 #ALIGNMENT IS NOT REVERSE COMPLEMENT
             startref,stopref,fatorstart,fatorstop = sliding(startsubject,stopsubject)
             startquery = startquery + fatorstart
             stopquery = stopquery - fatorstop
 
-            coordref[subject + "--" + query] = [startref,stopref] #
+            coordref[subject + "--" + query] = [startref,stopref]
             dictref[subject] = ''
-            coordgbs[query] = [startquery,stopquery] #
+            coordgbs[query] = [startquery,stopquery]
 
 ################################################################################
 cdsref = {}
@@ -144,30 +148,38 @@ for record in SeqIO.parse(reference, "fasta"):
 ###
 for x in blastnfilt.values():
     query = x[0]
-    refer = x[1] #reference
+    refer = x[1]
     copies = []
-    #GET SEQUENCES FROM GBS
 
     if len(locus[query]) >= numberofcopies: #FILTER BY NUMBER OF COPIES
-        output = open(query + "_" + refer + ".aln.fas","w")
+        output = open(query + "_" + refer + ".gbs.fas","w")
         if revcomp[query] == 1:
             for w in locus[query]:
                 seq = w[coordgbs[query][0]:coordgbs[query][1]]
-                seq = str(Seq(seq).reverse_complement()) #here has to be reverse complement
-                #seq = seq[coordgbs[query][0]:coordgbs[query][1]]
+                seq = str(Seq(seq).reverse_complement()) #convert seq to reverse complement
                 copies.append(seq)
         else:
             for w in locus[query]:
                 seq = w[coordgbs[query][0]:coordgbs[query][1]]
                 copies.append(seq)
 
-    #GET SEQUENCE FROM REFERENCE
+        #GET SEQUENCE FROM REFERENCE
         myrefseq = cdsref[refer][coordref[refer + "--" + query][0]:coordref[refer + "--" + query][1]]
 
+        #WRITE FASTA OUTPUT FILES
         output.write(">" + refer + " " + str(coordref[refer + "--" + query][0]) + "," + str(coordref[refer + "--" + query][1]) + "\n" + str(myrefseq) + "\n")
         if int(coordref[refer + "--" + query][0]) % 3 != 0: #report if any reference sequence starts out of reading frame
-            print ("ERRO in file:",query + "_" + refer + ".aln.fas","OUT OF FRAME")
+            print ("ERRO in file:",query + "_" + refer + ".gbs.fas","OUT OF FRAME")
 
         for j in copies:
             output.write(">" + query + " " + str(revcomp[query]) + " " + str(coordgbs[query][0]) + "," + str(coordgbs[query][1]) + "\n" + str(j) + "\n")
         output.close()
+
+#MUSCLE ALIGNMENT STEP
+for x in blastnfilt.values():
+    query = x[0]
+    refer = x[1]
+    if len(locus[query]) >= numberofcopies: #FILTER BY NUMBER OF COPIES
+        print ("Aligning " + query + "_" + refer)
+        muscle = subprocess.Popen("muscle -in " + query + "_" + refer + ".gbs.fas" + " -out " + query + "_" + refer + ".aln.fas",shell=True)
+        muscle.wait()
