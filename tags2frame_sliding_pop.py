@@ -16,13 +16,14 @@ print ("Start of run:",time.ctime())
 fileparent1 = "3018"
 fileparent2 = "3046"
 batch = "batch_1.catalog.tags.tsv"
-workdir = "/home/hugo/Documents/denovo_out09/" #directory of Stacks tags.tsv files
-reference = "/home/hugo/Dropbox/Unifesp/Trabalhos/Genes_duplicados/plaza/cds.sbi.csv"
+workdir = "/storage2/hugo/sugarcane/denovo_out09/" #directory of Stacks tags.tsv files
+reference = "/storage1/referencegenomes/cds.sbi.csv"
 copiescutoff = 2 #minimum number of Stacks for a Locus Stack in progenitors
-num_cores = 2
+num_cores = 30
 runblast = 1 #1 for yes, 0 for no
 mismatches = 10
 gapopenings = 10
+
 
 outlog = open(workdir + "tags2frame.log","w")
 ################################################################################
@@ -184,28 +185,15 @@ with open("catalogseq.blastn","r") as setblastn:
         refer = i[1] #reference
         identity = float(i[2])
         length = int(i[3])
-        startq = int(i[6])
-        stopq = int(i[7])
-        starts = int(i[8])
-        stops = int(i[9])
 
-        #check if alignments are the same length
-        diff1 = int(startq - stopq)
-        diff2 = int(starts-stops)
-        if diff1 < 0:
-            diff1 = diff1 * (-1)
-        if diff2 < 0:
-            diff2 = diff2 * (-1)
-
-        #CUTOFF BLAST: by mismatches, gapopenings, and IF the difference between alignments is not divisble by 3
-        #that is: if there is indel between alignments
-        if int(i[4]) <= mismatches and int(i[5]) <= gapopenings and int(diff1 - diff2) % 3 == 0:
+        if int(i[4]) <= mismatches and int(i[5]) <= gapopenings: #CUTOFF BLAST
 
             if query not in blastnfilt:
                 blastnfilt[query] = i
             else:
                 if identity > float(blastnfilt[query][2]) and length > int(blastnfilt[query][3]): #FILTER best hits based on identity and alignment length
                     blastnfilt[query] = i
+
 
 ################################################################################
 #DICT CONTAINING GBS LOCUS COPIES SEQUENCES
